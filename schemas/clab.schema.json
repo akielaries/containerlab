@@ -57,6 +57,8 @@
                         "vr-juniper_vsrx",
                         "vr-vjunosswitch",
                         "vr-juniper_vjunosswitch",                      
+                        "vr-vjunosevolved",
+                        "vr-juniper_vjunosevolved",                      
                         "vr-xrv",
                         "vr-cisco_xrv",
                         "vr-xrv9k",
@@ -718,6 +720,12 @@
                         "vr-vjunosswitch": {
                             "$ref": "#/definitions/node-config"
                         },                      
+                        "vr-juniper_vjunosevolved": {
+                            "$ref": "#/definitions/node-config"
+                        },  
+                        "vr-vjunosevolved": {
+                            "$ref": "#/definitions/node-config"
+                        },    
                         "vr-aruba_aoscx": {
                             "$ref": "#/definitions/node-config"
                         },

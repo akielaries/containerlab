@@ -1,0 +1,9 @@
+name: srlvjunos02
+
+topology:
+  nodes:
+    vevo0:
+      kind: vr-juniper_vjunosevolved
+      #image: vrnetlab/vr-vjunosevolved:23.1R1.8
+      image: vrnetlab/vr-vjunosevolved:23.2R1.15
+      startup-config: vjunos.cfg
