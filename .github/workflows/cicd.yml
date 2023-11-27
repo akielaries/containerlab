@@ -24,7 +24,7 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
       docs: ${{ steps.filter.outputs.docs }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -44,6 +44,7 @@ jobs:
               - 'errors/**'
               - 'cert/**'
               - 'virt/**'
+              - 'git/**'
               - 'border0_api/**'
               - '.github/workflows/cicd.yml'
               - 'go.mod'
@@ -60,8 +61,8 @@ jobs:
     needs: file-changes
     if: needs.file-changes.outputs.code == 'true' || startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v3
-      - uses: WillAbides/setup-go-faster@v1.10.1
+      - uses: actions/checkout@v4
+      - uses: WillAbides/setup-go-faster@v1.12.0
         with:
           go-version: ${{ env.GOVER }}
 
@@ -91,8 +92,8 @@ jobs:
     needs: file-changes
     if: needs.file-changes.outputs.code == 'true' || startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v3
-      - uses: WillAbides/setup-go-faster@v1.10.1
+      - uses: actions/checkout@v4
+      - uses: WillAbides/setup-go-faster@v1.12.0
         with:
           go-version: ${{ env.GOVER }}
 
@@ -106,8 +107,8 @@ jobs:
     needs: file-changes
     if: needs.file-changes.outputs.code == 'true' || startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v3
-      - uses: WillAbides/setup-go-faster@v1.10.1
+      - uses: actions/checkout@v4
+      - uses: WillAbides/setup-go-faster@v1.12.0
         with:
           go-version: ${{ env.GOVER }}
 
@@ -132,7 +133,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: ./tests/coverage/*
+          path: /tmp/clab-tests/coverage/*
           retention-days: 7
 
   smoke-tests:
@@ -148,7 +149,7 @@ jobs:
       - build-containerlab
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v3
@@ -163,7 +164,7 @@ jobs:
           echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list
           curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/devel_kubic_libcontainers_unstable.gpg > /dev/null
           sudo apt update
-          sudo apt install -y podman=4:4.6.1-0ubuntu22.04+obs80.5
+          sudo apt install -y podman
           sudo systemctl start podman
       - uses: actions/setup-python@v4
         with:
@@ -189,7 +190,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: ./tests/coverage/*
+          path: /tmp/clab-tests/coverage/*
           retention-days: 7
 
   ext-container-tests:
@@ -204,7 +205,7 @@ jobs:
       - build-containerlab
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v3
@@ -221,7 +222,7 @@ jobs:
         run: |
           pip install -r tests/requirements.txt
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -242,7 +243,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: ./tests/coverage/*
+          path: /tmp/clab-tests/coverage/*
           retention-days: 7
 
   ceos-basic-tests:
@@ -257,7 +258,7 @@ jobs:
       - build-containerlab
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v3
@@ -274,7 +275,7 @@ jobs:
         run: |
           pip install -r tests/requirements.txt
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -297,7 +298,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: ./tests/coverage/*
+          path: /tmp/clab-tests/coverage/*
           retention-days: 7
 
   srlinux-basic-tests:
@@ -313,7 +314,7 @@ jobs:
       - build-containerlab
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v3
@@ -324,12 +325,14 @@ jobs:
 
       - name: Setup Podman
         if: matrix.runtime == 'podman'
+        # check http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04/amd64/
+        # for available podman releases
         run: |
           sudo apt purge -y podman
           echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/devel:kubic:libcontainers:unstable.list
           curl -fsSL https://download.opensuse.org/repositories/devel:kubic:libcontainers:unstable/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/devel_kubic_libcontainers_unstable.gpg > /dev/null
           sudo apt update
-          sudo apt install -y podman=4:4.6.1-0ubuntu22.04+obs80.5
+          sudo apt install -y podman
           sudo systemctl start podman
 
       - uses: actions/setup-python@v4
@@ -356,7 +359,7 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: ./tests/coverage/*
+          path: /tmp/clab-tests/coverage/*
           retention-days: 7
 
   ixiac-one-basic-tests:
@@ -371,7 +374,7 @@ jobs:
       - build-containerlab
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/download-artifact@v3
@@ -403,10 +406,17 @@ jobs:
         if: always()
         with:
           name: coverage
-          path: ./tests/coverage/*
+          path: /tmp/clab-tests/coverage/*
           retention-days: 7
 
-    # create a job that downloads coverage artifact and uses codecov to upload it
+  vxlan-tests:
+    uses: ./.github/workflows/vxlan-tests.yml
+    needs:
+      - unit-test
+      - staticcheck
+      - build-containerlab
+
+  # a job that downloads coverage artifact and uses codecov to upload it
   coverage:
     runs-on: ubuntu-22.04
     needs:
@@ -416,18 +426,19 @@ jobs:
       - ceos-basic-tests
       - srlinux-basic-tests
       - ixiac-one-basic-tests
+      - vxlan-tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: WillAbides/setup-go-faster@v1.10.1
+      - uses: WillAbides/setup-go-faster@v1.12.0
         with:
           go-version: ${{ env.GOVER }}
       - uses: actions/download-artifact@v3
         with:
           name: coverage
-          path: tests/coverage
+          path: /tmp/clab-tests/coverage
       - name: convert Go's binary coverage to text coverage
         run: make convert-coverage
       - name: Upload coverage to codecov
@@ -438,10 +449,10 @@ jobs:
     needs: file-changes
     if: needs.file-changes.outputs.docs == 'true' || startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/docs-publish'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -471,19 +482,21 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs:
       - docs-test
+      - unit-test
       - smoke-tests
       - ceos-basic-tests
       - srlinux-basic-tests
       - ixiac-one-basic-tests
       - ext-container-tests
+      - vxlan-tests
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: WillAbides/setup-go-faster@v1.10.1
+        uses: WillAbides/setup-go-faster@v1.12.0
         with:
           go-version: ${{ env.GOVER }}
 
@@ -501,14 +514,14 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v5
         with:
           version: ${{ env.GORELEASER_VER }}
           args: release --rm-dist --debug
@@ -522,12 +535,12 @@ jobs:
     needs: build-and-release
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -544,12 +557,12 @@ jobs:
     needs: docs-test
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

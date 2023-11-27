@@ -97,7 +97,7 @@ func deployFn(_ *cobra.Command, _ []string) error {
 
 	opts := []clab.ClabOption{
 		clab.WithTimeout(timeout),
-		clab.WithTopoFile(topo, varsFile),
+		clab.WithTopoPath(topo, varsFile),
 		clab.WithNodeFilter(nodeFilter),
 		clab.WithRuntime(rt,
 			&runtime.RuntimeConfig{
@@ -155,6 +155,12 @@ func deployFn(_ *cobra.Command, _ []string) error {
 
 	log.Info("Creating lab directory: ", c.TopoPaths.TopologyLabDir())
 	utils.CreateDirectory(c.TopoPaths.TopologyLabDir(), 0755)
+	// adjust ACL for Labdir such that SUDO_UID Users will
+	// also have access to lab directory files
+	err = utils.AdjustFileACLs(c.TopoPaths.TopologyLabDir())
+	if err != nil {
+		log.Infof("unable to adjust Labdir file ACLs: %v", err)
+	}
 
 	// create an empty ansible inventory file that will get populated later
 	// we create it here first, so that bind mounts of ansible-inventory.yml file could work
@@ -275,6 +281,12 @@ func deployFn(_ *cobra.Command, _ []string) error {
 		log.Errorf("failed to create hosts file: %v", err)
 	}
 
+	log.Info("Adding ssh config for containerlab nodes")
+	err = c.AddSSHConfig()
+	if err != nil {
+		log.Errorf("failed to create ssh config file: %v", err)
+	}
+
 	// execute commands specified for nodes with `exec` node parameter
 	execCollection := exec.NewExecCollection()
 	for _, n := range c.Nodes {
@@ -352,6 +364,7 @@ func certificateAuthoritySetup(c *clab.CLab) error {
 	// define the attributes used to generate the CA Cert
 	caCertInput := &cert.CACSRInput{
 		CommonName:   c.Config.Name + " lab CA",
+		Country:      "US",
 		Expiry:       validityDuration,
 		Organization: "containerlab",
 		KeySize:      keySize,

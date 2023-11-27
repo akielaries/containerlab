@@ -23,6 +23,7 @@ const (
 	CertFileSuffix            = ".pem"
 	KeyFileSuffix             = ".key"
 	CSRFileSuffix             = ".csr"
+	sshConfigFilePathTmpl     = "/etc/ssh/ssh_config.d/clab-%s.conf"
 )
 
 // clabTmpDir is the directory where clab stores temporary and/or downloaded files.
@@ -73,8 +74,16 @@ func (t *TopoPaths) SetTopologyFilePath(topologyFile string) error {
 	return nil
 }
 
-// SetLabDir sets the labDir foldername (no abs path, but the last element) usually the topology name.
-func (t *TopoPaths) SetLabDir(topologyName string) (err error) {
+func (t *TopoPaths) SetLabDir(p string) (err error) {
+	if !utils.DirExists(p) {
+		return fmt.Errorf("folder %s does not exist or is not accessible", p)
+	}
+	t.labDir = p
+	return nil
+}
+
+// SetLabDirByPrefix sets the labDir foldername (no abs path, but the last element) usually the topology name.
+func (t *TopoPaths) SetLabDirByPrefix(topologyName string) (err error) {
 	t.topoName = topologyName
 	// if "CLAB_LABDIR_BASE" Env Var is set, use that dir as a base
 	// for the labDir, otherwise use PWD.
@@ -108,6 +117,11 @@ func (t *TopoPaths) SetExternalCaFiles(certFile, keyFile string) error {
 	t.externalCAKeyFile = keyFile
 
 	return nil
+}
+
+// SSHConfigPath returns the topology dependent ssh config file name.
+func (t *TopoPaths) SSHConfigPath() string {
+	return fmt.Sprintf(sshConfigFilePathTmpl, t.topoName)
 }
 
 // TLSBaseDir returns the path of the TLS directory structure.
@@ -163,6 +177,11 @@ func (t *TopoPaths) TopologyFilenameAbsPath() string {
 // ClabTmpDir returns the path to the temporary directory where clab stores temporary and/or downloaded files.
 func (*TopoPaths) ClabTmpDir() string {
 	return clabTmpDir
+}
+
+// CreateTmpDir creates a clab temp directory.
+func (t *TopoPaths) CreateTmpDir() {
+	utils.CreateDirectory(t.ClabTmpDir(), 0755)
 }
 
 // StartupConfigDownloadFileAbsPath returns the absolute path to the startup-config file

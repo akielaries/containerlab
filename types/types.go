@@ -55,7 +55,7 @@ type MgmtNet struct {
 	IPv6Subnet     string `yaml:"ipv6-subnet,omitempty" json:"ipv6-subnet,omitempty"`
 	IPv6Gw         string `yaml:"ipv6-gw,omitempty" json:"ipv6-gw,omitempty"`
 	IPv6Range      string `yaml:"ipv6-range,omitempty" json:"ipv6-range,omitempty"`
-	MTU            string `yaml:"mtu,omitempty" json:"mtu,omitempty"`
+	MTU            int    `yaml:"mtu,omitempty" json:"mtu,omitempty"`
 	ExternalAccess *bool  `yaml:"external-access,omitempty" json:"external-access,omitempty"`
 }
 
@@ -113,8 +113,10 @@ type NodeConfig struct {
 	StartupDelay uint `json:"startup-delay,omitempty"`
 	// when set to true will enforce the use of startup-config, even when config is present in the lab directory
 	EnforceStartupConfig bool `json:"enforce-startup-config,omitempty"`
+	// when set to true will prevent creation of a startup-config, for auto-provisioning testing (ZTP)
+	SuppressStartupConfig bool `json:"suppress-startup-config,omitempty"`
 	// when set to true will auto-remove a stopped/failed container
-	AutoRemove *bool `json:"auto-remove,omitempty"`
+	AutoRemove bool `json:"auto-remove,omitempty"`
 	// path to config file that is actually mounted to the container and is a result of templation
 	ResStartupConfig string            `json:"startup-config-abs-path,omitempty"`
 	Config           *ConfigDispatcher `json:"config,omitempty"`

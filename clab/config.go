@@ -29,8 +29,6 @@ const (
 	dockerNetName     = "clab"
 	dockerNetIPv4Addr = "172.20.20.0/24"
 	dockerNetIPv6Addr = "2001:172:20:20::/64"
-	// NSPath value assigned to host interfaces.
-	hostNSPath = "__host"
 	// veth link mtu.
 	DefaultVethLinkMTU = 9500
 
@@ -55,7 +53,7 @@ type Config struct {
 func (c *CLab) parseTopology() error {
 	log.Infof("Parsing & checking topology file: %s", c.TopoPaths.TopologyFilenameBase())
 
-	err := c.TopoPaths.SetLabDir(c.Config.Name)
+	err := c.TopoPaths.SetLabDirByPrefix(c.Config.Name)
 	if err != nil {
 		return err
 	}
@@ -226,12 +224,10 @@ func (c *CLab) createNodeCfg(nodeName string, nodeDef *types.NodeDefinition, idx
 	}
 
 	nodeCfg.EnforceStartupConfig = c.Config.Topology.GetNodeEnforceStartupConfig(nodeCfg.ShortName)
+	nodeCfg.SuppressStartupConfig = c.Config.Topology.GetNodeSuppressStartupConfig(nodeCfg.ShortName)
 
 	// initialize license field
-	p, err := c.Config.Topology.GetNodeLicense(nodeCfg.ShortName)
-	if err != nil {
-		return nil, err
-	}
+	p := c.Config.Topology.GetNodeLicense(nodeCfg.ShortName)
 	// resolve the lic path to an abs path
 	nodeCfg.License = utils.ResolvePath(p, c.TopoPaths.TopologyFileDir())
 
@@ -262,21 +258,17 @@ func (c *CLab) createNodeCfg(nodeName string, nodeDef *types.NodeDefinition, idx
 // Returns an absolute path to the startup-config file.
 func (c *CLab) processStartupConfig(nodeCfg *types.NodeConfig) error {
 	// process startup-config
-	p, err := c.Config.Topology.GetNodeStartupConfig(nodeCfg.ShortName)
-	if err != nil {
-		return err
-	}
+	p := c.Config.Topology.GetNodeStartupConfig(nodeCfg.ShortName)
 
 	// embedded config is a config that is defined as a multi-line string in the topology file
 	// it contains at least one newline
 	isEmbeddedConfig := strings.Count(p, "\n") >= 1
 	// downloadable config starts with http(s)://
-	isDownloadableConfig := utils.IsHttpUri(p)
+	isDownloadableConfig := utils.IsHttpURL(p, false)
 
 	if isEmbeddedConfig || isDownloadableConfig {
 		// both embedded and downloadable configs are require clab tmp dir to be created
-		tmpLoc := c.TopoPaths.ClabTmpDir()
-		utils.CreateDirectory(tmpLoc, 0755)
+		c.TopoPaths.CreateTmpDir()
 
 		switch {
 		case isEmbeddedConfig:
@@ -286,7 +278,7 @@ func (c *CLab) processStartupConfig(nodeCfg *types.NodeConfig) error {
 			absDestFile := c.TopoPaths.StartupConfigDownloadFileAbsPath(
 				nodeCfg.ShortName, "embedded.partial.cfg")
 
-			err = utils.CreateFile(absDestFile, p)
+			err := utils.CreateFile(absDestFile, p)
 			if err != nil {
 				return err
 			}
@@ -530,7 +522,7 @@ func (c *CLab) resolveBindPaths(binds []string, nodedir string) error {
 	return nil
 }
 
-// setClabIntfsEnvVar sets CLAB_INTFS env var for each node
+// SetClabIntfsEnvVar sets CLAB_INTFS env var for each node
 // which holds the number of interfaces a node expects to have (without mgmt interfaces).
 func (c *CLab) SetClabIntfsEnvVar() {
 	for _, n := range c.Nodes {

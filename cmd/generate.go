@@ -39,9 +39,8 @@ var interfaceFormat = map[string]string{
 }
 
 var supportedKinds = []string{
-	"srl", "ceos", "linux", "bridge", "sonic-vs", "crpd", "vr-sros","vr-vmx", "vr-vsrx", 
+	"srl", "ceos", "linux", "bridge", "sonic-vs", "crpd", "vr-sros", "vr-vmx", "vr-vsrx",
 	"vr-vqfx", "vr-vjunosswitch", "vr-vjunosevolved", "vr-xrv9k", "vr-veos", "xrd", "rare",
-}
 
 const (
 	defaultSRLType     = "ixrd2"

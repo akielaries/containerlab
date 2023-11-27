@@ -18,12 +18,8 @@ type LinkHostRaw struct {
 // ToLinkBriefRaw converts the raw link into a LinkConfig.
 func (r *LinkHostRaw) ToLinkBriefRaw() *LinkBriefRaw {
 	lc := &LinkBriefRaw{
-		Endpoints: make([]string, 2),
-		LinkCommonParams: LinkCommonParams{
-			MTU:    r.MTU,
-			Labels: r.Labels,
-			Vars:   r.Vars,
-		},
+		Endpoints:        make([]string, 2),
+		LinkCommonParams: r.LinkCommonParams,
 	}
 
 	lc.Endpoints[0] = fmt.Sprintf("%s:%s", r.Endpoint.Node, r.Endpoint.Iface)
@@ -33,18 +29,22 @@ func (r *LinkHostRaw) ToLinkBriefRaw() *LinkBriefRaw {
 }
 
 func hostLinkFromBrief(lb *LinkBriefRaw, specialEPIndex int) (*LinkHostRaw, error) {
-	_, hostIf, node, nodeIf := extractHostNodeInterfaceData(lb, specialEPIndex)
-
-	result := &LinkHostRaw{
-		LinkCommonParams: LinkCommonParams{
-			MTU:    lb.MTU,
-			Labels: lb.Labels,
-			Vars:   lb.Vars,
-		},
-		HostInterface: hostIf,
-		Endpoint:      NewEndpointRaw(node, nodeIf, ""),
+	_, hostIf, node, nodeIf, err := extractHostNodeInterfaceData(lb, specialEPIndex)
+	if err != nil {
+		return nil, err
 	}
-	return result, nil
+	link := &LinkHostRaw{
+		LinkCommonParams: lb.LinkCommonParams,
+		HostInterface:    hostIf,
+		Endpoint:         NewEndpointRaw(node, nodeIf, ""),
+	}
+
+	// set default link mtu if MTU is unset
+	if link.MTU == 0 {
+		link.MTU = DefaultLinkMTU
+	}
+
+	return link, nil
 }
 
 func (*LinkHostRaw) GetType() LinkType {
@@ -68,9 +68,8 @@ func (r *LinkHostRaw) Resolve(params *ResolveParams) (Link, error) {
 		return nil, err
 	}
 	hostEp := &EndpointHost{
-		EndpointGeneric: *NewEndpointGeneric(GetHostLinkNode(), r.HostInterface),
+		EndpointGeneric: *NewEndpointGeneric(GetHostLinkNode(), r.HostInterface, link),
 	}
-	hostEp.Link = link
 
 	hostEp.MAC, err = utils.GenMac(ClabOUI)
 	if err != nil {
@@ -83,6 +82,11 @@ func (r *LinkHostRaw) Resolve(params *ResolveParams) (Link, error) {
 	hostEp.GetNode().AddLink(link)
 	hostEp.GetNode().AddEndpoint(hostEp)
 	ep.GetNode().AddLink(link)
+
+	// set default link mtu if MTU is unset
+	if link.MTU == 0 {
+		link.MTU = DefaultLinkMTU
+	}
 
 	return link, nil
 }
